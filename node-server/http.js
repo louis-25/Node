@@ -7,6 +7,7 @@ const server = http.createServer((req, res) => {
   console.log(req.httpVersion)
 
   const url = req.url;
+  res.setHeader('Content-Type', 'text/html');
   if(url === '/') {    
     fs.createReadStream('./html/index.html').pipe(res);        
   } else if (url == '/courses') {
