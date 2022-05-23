@@ -12,13 +12,14 @@ const conn = {
 let connection = mysql.createConnection(conn); // DB 커넥션 생성
 connection.connect(); // DB 접속
 
-let testQuery = ""
+let sqlQuery = ""
 
 class models {
   async getUser(){
-    testQuery = "SELECT * FROM TB2_CHAT_DATA;"
+    sqlQuery = "SELECT * FROM TB2_CHAT_DATA;"
     
-    connection.query(testQuery, (err, result, fields) => {
+    connection.query(sqlQuery, (err, result, fields) => {
+      console.log('result',result);
       if(err){
         console.log(err);
       } 
@@ -26,12 +27,74 @@ class models {
     });
     return await Promise.resolve(this.result);
   }
-  async setChatData(memberId, memberNick, memberImg, msg, time, socket){
-    testQuery = "INSERT INTO TB2_CHAT_DATA(USER_ID, NAME, IMG, MSG, SOCKET, REG_DATE)"
-              +`VALUES(${memberId}, '${memberNick}', '${memberImg}', '${msg}', '${socket}', '${time}');`
+  async getChatOne(memberId) { // 해당 멤버의 최신 데이터 하나 반환
+    // console.log(memberId);
+    sqlQuery = `SELECT MAX(SEQ), MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, DATE_FORMAT(REG_DATE, "%Y-%m-%d %H:%i:%s") AS REG_DATE, STATUS FROM TB2_CHAT_DATA WHERE MEMBER_ID="${memberId}";`;
+    
+    const query = new Promise((resolve, reject)=>{
+      connection.query(sqlQuery, async (err, result, fields) => {      
+        if(err){
+          reject(console.log(err));
+        }       
+        // this.result = result
+        resolve(result);
+      });
+    })
+    const result = await query;
+    return await Promise.resolve(result);
+  }
+  async getChatSeq(seq) { // Seq에 일치하는 데이터 반환    
+    sqlQuery = `SELECT SEQ, MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, DATE_FORMAT(REG_DATE, "%Y-%m-%d %H:%i:%s") AS REG_DATE, STATUS, REPORT_MEMBER_ID 
+                FROM TB2_CHAT_DATA WHERE SEQ=${seq}`;
+    
+    const query = new Promise((resolve, reject)=>{
+      connection.query(sqlQuery, async (err, result, fields) => {      
+        if(err){
+          reject(console.log(err));
+        }       
+        // this.result = result
+        resolve(result);
+      });
+    })
+    const result = await query;
+    return await Promise.resolve(result);
+  }
+
+  async setChatData(memberId, memberNick, memberImg, msg, roomName, time){
+    console.log('test',time);
+    sqlQuery = `INSERT INTO TB2_CHAT_DATA(MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, REG_DATE)
+                VALUES(${memberId}, '${memberNick}', '${memberImg}', '${msg}', '${roomName}', '${time}');`
 
     
-    connection.query(testQuery, (err, result, fields) => {
+    connection.query(sqlQuery, (err, result, fields) => {
+      if(err){
+        console.log(err);
+      } 
+      this.result = result;
+    });
+    return await Promise.resolve(this.result);
+  }
+  async setChatReport (seq, status, member_id){
+    if(status == 'Y') {
+      sqlQuery = `UPDATE TB2_CHAT_DATA SET STATUS = 'D', REPORT_MEMBER_ID = '${member_id}' WHERE SEQ = ${seq}`
+    }else if(status == 'D') {
+      sqlQuery = `UPDATE TB2_CHAT_DATA SET STATUS = 'Y', REPORT_MEMBER_ID = '0' WHERE SEQ = ${seq}`
+    }
+
+    connection.query(sqlQuery, (err, result, fields) => {
+      if(err){
+        console.log(err);
+      } 
+      this.result = result;
+    });
+    return await Promise.resolve(this.result);
+  }
+  async setChatReportHistory (seq){ // 신고,차단 기록하기
+    
+    sqlQuery = `INSERT INTO TB2_CHAT_REPORT_HISTORY(SEQ, MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, REG_DATE, STATUS, REPORT_MEMBER_ID) 
+                SELECT * FROM TB2_CHAT_DATA WHERE SEQ=${seq}`;
+
+    connection.query(sqlQuery, (err, result, fields) => {
       if(err){
         console.log(err);
       } 
@@ -42,5 +105,3 @@ class models {
 }
 
 module.exports = models
-
-
