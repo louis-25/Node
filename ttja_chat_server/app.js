@@ -37,6 +37,15 @@ io.on("connection", async (socket) => {
     socket.leave(room);    
     console.log(room,'room 접속 해제');
   })
+  socket.on('deleteMsg', async (seq) => {     
+    try {
+      await model.deleteChatData(seq); // seq에 해당되는 메세지 DB에서 제거
+      io.emit("deleteMsg", seq);
+      console.log(seq,"번 메세지 제거");
+    }catch(e) {
+      console.log('deleteMsg 실패', e);
+    }
+  })
   socket.on("report", async (data) => {
     const { seq, status, member_id } = data;
     await model.setChatReport(seq, status, member_id);

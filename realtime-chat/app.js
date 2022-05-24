@@ -4,11 +4,19 @@ const app = express();
 const path = require("path");
 const server = http.createServer(app);
 const socketIO = require("socket.io");
+const cors = require("cors");
 const moment = require("moment");
 
-const io = socketIO(server);
+// const io = socketIO(server);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(express.static(path.join(__dirname, "src")));
+app.use(cors);
 
 const PORT = process.env.PORT || 5000;
 

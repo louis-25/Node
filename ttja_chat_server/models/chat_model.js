@@ -10,7 +10,14 @@ const conn = {
 }
 
 let connection = mysql.createConnection(conn); // DB 커넥션 생성
-connection.connect(); // DB 접속
+connection.connect((error)=>{
+  if(error) {
+    console.error('mysql connection error : ' + error);
+  }else {
+    console.log('mysql is connected successfully!');
+  }
+}); // DB 접속
+
 
 let sqlQuery = ""
 
@@ -48,7 +55,7 @@ class models {
                 FROM TB2_CHAT_DATA WHERE SEQ=${seq}`;
     
     const query = new Promise((resolve, reject)=>{
-      connection.query(sqlQuery, async (err, result, fields) => {      
+      connection.query(sqlQuery, async (err, result, fields) => {
         if(err){
           reject(console.log(err));
         }       
@@ -59,7 +66,6 @@ class models {
     const result = await query;
     return await Promise.resolve(result);
   }
-
   async setChatData(memberId, memberNick, memberImg, msg, roomName, time){
     console.log('test',time);
     sqlQuery = `INSERT INTO TB2_CHAT_DATA(MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, REG_DATE)
@@ -93,6 +99,17 @@ class models {
     
     sqlQuery = `INSERT INTO TB2_CHAT_REPORT_HISTORY(SEQ, MEMBER_ID, NAME, IMG, MSG, ROOM_NAME, REG_DATE, STATUS, REPORT_MEMBER_ID) 
                 SELECT * FROM TB2_CHAT_DATA WHERE SEQ=${seq}`;
+
+    connection.query(sqlQuery, (err, result, fields) => {
+      if(err){
+        console.log(err);
+      } 
+      this.result = result;
+    });
+    return await Promise.resolve(this.result);
+  }
+  async deleteChatData(seq){ // seq에 해당되는 데이터 한줄 제거
+    sqlQuery = `DELETE FROM TB2_CHAT_DATA WHERE SEQ=${seq}`;
 
     connection.query(sqlQuery, (err, result, fields) => {
       if(err){
